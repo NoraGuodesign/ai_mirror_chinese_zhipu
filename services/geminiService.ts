@@ -128,12 +128,8 @@ export class GeminiService {
    * 生成即时定制赞美
    */
   async generatePraise(achievements: Achievement[], lastInput?: string): Promise<string> {
-    const fallback = () => {
-      if (lastInput) {
-        return `你把${lastInput.slice(0, 12)}做得很棒`;
-      }
-      return DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
-    };
+    const fallback = () =>
+      DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
     const context = lastInput || achievements.slice(-2).map(a => a.text).join("，");
     
     try {
@@ -145,7 +141,7 @@ export class GeminiService {
           {
             role: "system",
             content:
-              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
+              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。避免机械套句或复述原话，禁止使用“你把xxx做得很棒”结构。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
           },
           { role: "user", content: `根据输入给出夸奖：${context}` },
         ],
@@ -154,6 +150,9 @@ export class GeminiService {
 
       let praiseText = content.trim().replace(/[“”、"']/g, "");
       if (!praiseText.startsWith('你')) praiseText = '你' + praiseText;
+      if (/你把.+做[得的]很棒/.test(praiseText)) {
+        return fallback();
+      }
       return praiseText.length > 25 ? praiseText.slice(0, 25) : praiseText;
     } catch (error) {
       console.error("Zhipu praise generation error:", error);
