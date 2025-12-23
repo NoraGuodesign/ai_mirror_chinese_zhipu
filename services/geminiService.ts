@@ -128,30 +128,8 @@ export class GeminiService {
    * 生成即时定制赞美
    */
   async generatePraise(achievements: Achievement[], lastInput?: string): Promise<string> {
-    const pickHighlight = (input?: string) => {
-      if (!input) return '';
-      const cleaned = input.replace(/[“”、"'`]/g, '').replace(/\s+/g, '').trim();
-      if (!cleaned) return '';
-      const fragment = cleaned.split(/[，。,；;！？!?]/).filter(Boolean)[0] || cleaned;
-      return fragment.length > 12 ? fragment.slice(0, 12) : fragment;
-    };
-
-    const buildLocalPraise = () => {
-      const highlight = pickHighlight(lastInput);
-      if (highlight) {
-        const templates = [
-          `你发现${highlight}，真会享受生活`,
-          `你注意到${highlight}，心思很细腻`,
-          `你记录了${highlight}，生活感满满`,
-          `你感受到${highlight}，真懂得照顾自己`,
-          `你留意到${highlight}，这份温柔很珍贵`,
-        ];
-        return templates[Math.floor(Math.random() * templates.length)];
-      }
-      return DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
-    };
-
-    const fallback = buildLocalPraise;
+    const fallback = () =>
+      DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
     const context = lastInput || achievements.slice(-2).map(a => a.text).join("，");
     
     try {

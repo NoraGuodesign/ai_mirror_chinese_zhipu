@@ -63,7 +63,7 @@ const AchievementBarrage: React.FC<Props> = ({ achievements, isActive }) => {
         return (
           <div
             key={laneIdx}
-            className={`relative w-full overflow-hidden min-h-[4.5rem] py-1 ${laneIdx === 1 ? 'mt-2' : ''}`}
+            className={`relative w-full overflow-hidden h-20 py-1 ${laneIdx === 1 ? 'mt-2' : ''}`}
           >
             <div 
               className="flex absolute whitespace-nowrap will-change-transform animate-ticker"
