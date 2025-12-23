@@ -119,13 +119,36 @@ const App: React.FC = () => {
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         if (Date.now() - lastGestureTime.current < 2000) return;
         let detected: GestureType = null;
-        results.multiHandLandmarks.forEach((landmarks: any) => {
-          const isThumbUp = landmarks[4].y < landmarks[3].y && landmarks[4].y < landmarks[5].y;
-          const isIndexUp = landmarks[8].y < landmarks[6].y;
-          const isMiddleUp = landmarks[12].y < landmarks[10].y;
-          if (isIndexUp && isMiddleUp && landmarks[16].y > landmarks[14].y) detected = 'victory';
-          if (isThumbUp && !isIndexUp && !isMiddleUp) detected = 'thumbs_up';
-        });
+        const [handA, handB] = results.multiHandLandmarks;
+        const distance = (a: any, b: any) => Math.hypot(a.x - b.x, a.y - b.y);
+        const palmScale = (landmarks: any) => distance(landmarks[0], landmarks[9]);
+        const isHeartGesture = (first: any, second: any) => {
+          if (!first || !second) return false;
+          const scale = (palmScale(first) + palmScale(second)) / 2;
+          if (!scale) return false;
+          const indexDist = distance(first[8], second[8]);
+          const thumbDist = distance(first[4], second[4]);
+          const wristsDist = distance(first[0], second[0]);
+          const indexAboveThumb = first[8].y < first[4].y && second[8].y < second[4].y;
+          return (
+            indexAboveThumb &&
+            indexDist < scale * 0.9 &&
+            thumbDist < scale * 0.8 &&
+            wristsDist < scale * 2.2
+          );
+        };
+
+        if (results.multiHandLandmarks.length >= 2 && isHeartGesture(handA, handB)) {
+          detected = 'heart';
+        } else {
+          results.multiHandLandmarks.forEach((landmarks: any) => {
+            const isThumbUp = landmarks[4].y < landmarks[3].y && landmarks[4].y < landmarks[5].y;
+            const isIndexUp = landmarks[8].y < landmarks[6].y;
+            const isMiddleUp = landmarks[12].y < landmarks[10].y;
+            if (isIndexUp && isMiddleUp && landmarks[16].y > landmarks[14].y) detected = 'victory';
+            if (isThumbUp && !isIndexUp && !isMiddleUp) detected = 'thumbs_up';
+          });
+        }
         if (detected) {
           if (status === MirrorStatus.STANDBY) setStatus(MirrorStatus.ACTIVE);
           setActiveGesture(detected);
