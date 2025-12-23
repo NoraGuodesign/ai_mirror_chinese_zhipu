@@ -89,14 +89,19 @@ export class GeminiService {
   async parseAchievements(rawText: string): Promise<string[]> {
     try {
       if (!this.apiKey) {
-        return rawText.split(/[，。, \n]/).filter(s => s.trim().length > 0);
+        return rawText
+          .split(/[，。, \n]/)
+          .map(item => item.trim())
+          .filter(item => item.length > 0)
+          .map(item => this.normalizeAchievementText(item))
+          .filter(item => item.length > 0);
       }
       const content = await this.requestCompletion(
         [
           {
             role: "system",
             content:
-              "你是一个成就提取专家。将输入拆分为JSON字符串数组。如输入'去健身吃了沙拉'，输出['自律健身', '吃了美味沙拉']。严禁输出Markdown文字，只输出JSON数组本身。",
+              "你是一个成就提取专家。用户像在和朋友聊天，请从文段中提取多个积极正面的“小事件”，每条保持简短、有行动结果。输出JSON字符串数组。如输入“今天好累但还是去跑步了，还做了沙拉”，输出[\"坚持跑步\",\"做了健康沙拉\"]。严禁输出Markdown文字，只输出JSON数组本身。",
           },
           { role: "user", content: rawText },
         ],
@@ -104,10 +109,18 @@ export class GeminiService {
       );
 
       const items = JSON.parse(content.trim());
-      return Array.isArray(items) ? items : [rawText];
+      const normalized = Array.isArray(items) ? items : [rawText];
+      return normalized
+        .map((item) => this.normalizeAchievementText(String(item)))
+        .filter((item) => item.length > 0);
     } catch (error) {
       console.warn("Zhipu parse failed, falling back:", error);
-      return rawText.split(/[，。, \n]/).filter(s => s.trim().length > 0);
+      return rawText
+        .split(/[，。, \n]/)
+        .map(item => item.trim())
+        .filter(item => item.length > 0)
+        .map(item => this.normalizeAchievementText(item))
+        .filter(item => item.length > 0);
     }
   }
 
@@ -115,7 +128,12 @@ export class GeminiService {
    * 生成即时定制赞美
    */
   async generatePraise(achievements: Achievement[], lastInput?: string): Promise<string> {
-    const fallback = () => DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
+    const fallback = () => {
+      if (lastInput) {
+        return `你把${lastInput.slice(0, 12)}做得很棒`;
+      }
+      return DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
+    };
     const context = lastInput || achievements.slice(-2).map(a => a.text).join("，");
     
     try {
@@ -127,9 +145,9 @@ export class GeminiService {
           {
             role: "system",
             content:
-              "你是一个霸道总裁。针对用户成就给出一句15字以内的称赞。必须'你'开头，语气绝对肯定、狂妄。直接输出文字，不要引号。",
+              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
           },
-          { role: "user", content: `针对成就给出狂妄的赞美：${context}` },
+          { role: "user", content: `根据输入给出夸奖：${context}` },
         ],
         { temperature: 0.7, maxTokens: 64 },
       );
@@ -141,6 +159,15 @@ export class GeminiService {
       console.error("Zhipu praise generation error:", error);
       return fallback();
     }
+  }
+
+  private normalizeAchievementText(text: string): string {
+    const trimmed = text.replace(/[。！？!?,，]+/g, "").trim();
+    const cleaned = trimmed
+      .replace(/^(我|今天|刚刚|刚才|然后|之后|后来|其实|就是|一下|一下子|又|还|只是|不过|但是|可是|而且|并且|于是|所以)\s*/g, "")
+      .replace(/(了|啦|呀|呢)$/g, "")
+      .trim();
+    return cleaned || trimmed;
   }
 }
 
