@@ -130,7 +130,12 @@ export class GeminiService {
   async generatePraise(achievements: Achievement[], lastInput?: string): Promise<string> {
     const fallback = () =>
       DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
-    const context = lastInput || achievements.slice(-2).map(a => a.text).join("，");
+    const candidateItems = achievements.map((item) => item.text).filter((item) => item.length > 0);
+    const focusItem =
+      candidateItems.length > 0
+        ? candidateItems[Math.floor(Math.random() * candidateItems.length)]
+        : (lastInput ?? "").trim();
+    const context = focusItem || lastInput || achievements.slice(-2).map(a => a.text).join("，");
     
     try {
       if (!this.apiKey) {
@@ -141,9 +146,9 @@ export class GeminiService {
           {
             role: "system",
             content:
-              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。避免机械套句或复述原话，禁止使用“你把xxx做得很棒”结构。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
+              "你是智谱AI生成赞美语的助手。用户record完后会看到一句赞美。请围绕给定的单一事件生成一句肯定语，语气自然真诚、有针对性，不要列举多件事。避免机械套句或复述原话，禁止使用“你把xxx做得很棒”结构。必须以“你”开头，12-24字以内。直接输出文字，不要引号。",
           },
-          { role: "user", content: `根据输入给出夸奖：${context}` },
+          { role: "user", content: `围绕这件事给出夸奖：${context}` },
         ],
         { temperature: 0.7, maxTokens: 64 },
       );
