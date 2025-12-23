@@ -74,7 +74,7 @@ const App: React.FC = () => {
       };
       recognitionRef.current = recognition;
     }
-  }, [isRecording]);
+  }, []);
 
   const handleInsertChar = (char: string) => {
     setConfirmedText(prev => {
@@ -143,6 +143,7 @@ const App: React.FC = () => {
     cursorIndexRef.current = 0;
     setCursorIndex(0);
     if (isRecording) {
+      isRecordingRef.current = false;
       setIsRecording(false);
       recognitionRef.current?.stop();
     }
