@@ -167,6 +167,27 @@
       box-shadow: 0 50px 100px rgba(0,0,0,0.5);
       width: 100%;
     }
+
+    .input-caret {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: #111;
+      margin: 0 1px;
+      vertical-align: -0.1em;
+      animation: caret-blink 1s steps(1) infinite;
+    }
+
+    @keyframes caret-blink {
+      0%,
+      50% {
+        opacity: 1;
+      }
+      50.01%,
+      100% {
+        opacity: 0;
+      }
+    }
   </style>
   <script type="importmap">
   {
