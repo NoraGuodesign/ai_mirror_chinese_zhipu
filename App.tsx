@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const lastGestureTime = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
   const cursorIndexRef = useRef(0);
+  const isRecordingRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem('achievements', JSON.stringify(achievements));
@@ -67,13 +68,13 @@ const App: React.FC = () => {
       };
 
       recognition.onend = () => {
-        if (isRecording) {
+        if (isRecordingRef.current) {
           try { recognition.start(); } catch (e) {}
         }
       };
       recognitionRef.current = recognition;
     }
-  }, [isRecording]);
+  }, []);
 
   const handleInsertChar = (char: string) => {
     setConfirmedText(prev => {
@@ -142,6 +143,7 @@ const App: React.FC = () => {
     cursorIndexRef.current = 0;
     setCursorIndex(0);
     if (isRecording) {
+      isRecordingRef.current = false;
       setIsRecording(false);
       recognitionRef.current?.stop();
     }
@@ -351,8 +353,16 @@ const App: React.FC = () => {
                     <button 
                       className={`w-full py-2.5 rounded-[18px] flex items-center justify-center gap-2 mb-2 transition-all transform active:scale-95 ${isRecording ? 'bg-black text-white shadow-xl' : 'bg-gray-100 text-gray-700 shadow-sm'}`}
                       onClick={() => {
-                        if (!isRecording) { recognitionRef.current?.start(); setIsRecording(true); }
-                        else { recognitionRef.current?.stop(); setIsRecording(false); setInterimStt(''); }
+                        if (!isRecording) {
+                          isRecordingRef.current = true;
+                          recognitionRef.current?.start();
+                          setIsRecording(true);
+                        } else {
+                          isRecordingRef.current = false;
+                          recognitionRef.current?.stop();
+                          setIsRecording(false);
+                          setInterimStt('');
+                        }
                       }}
                     >
                       <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'} text-xs`}></i>
