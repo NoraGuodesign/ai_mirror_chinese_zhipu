@@ -46,7 +46,7 @@ const App: React.FC = () => {
       recognition.lang = 'zh-CN';
       recognition.continuous = true;
       recognition.interimResults = true;
-      
+
       recognition.onresult = (event: any) => {
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -74,7 +74,31 @@ const App: React.FC = () => {
       };
       recognitionRef.current = recognition;
     }
-  }, [isRecording]);
+  }, []);
+
+  const stopRecording = () => {
+    isRecordingRef.current = false;
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      if (typeof recognition.abort === 'function') {
+        recognition.abort();
+      } else {
+        recognition.stop();
+      }
+    }
+    setIsRecording(false);
+    setInterimStt('');
+  };
+
+  const startRecording = () => {
+    isRecordingRef.current = true;
+    try {
+      recognitionRef.current?.start();
+      setIsRecording(true);
+    } catch (e) {
+      isRecordingRef.current = false;
+    }
+  };
 
   const handleInsertChar = (char: string) => {
     setConfirmedText(prev => {
@@ -142,9 +166,8 @@ const App: React.FC = () => {
     setInterimStt('');
     cursorIndexRef.current = 0;
     setCursorIndex(0);
-    if (isRecording) {
-      setIsRecording(false);
-      recognitionRef.current?.stop();
+    if (isRecordingRef.current) {
+      stopRecording();
     }
 
     setPraise(customPraise);
@@ -356,14 +379,9 @@ const App: React.FC = () => {
                       className={`w-full py-2.5 rounded-[18px] flex items-center justify-center gap-2 mb-2 transition-all transform active:scale-95 ${isRecording ? 'bg-black text-white shadow-xl' : 'bg-gray-100 text-gray-700 shadow-sm'}`}
                       onClick={() => {
                         if (!isRecording) {
-                          isRecordingRef.current = true;
-                          recognitionRef.current?.start();
-                          setIsRecording(true);
+                          startRecording();
                         } else {
-                          isRecordingRef.current = false;
-                          recognitionRef.current?.stop();
-                          setIsRecording(false);
-                          setInterimStt('');
+                          stopRecording();
                         }
                       }}
                     >
