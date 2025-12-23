@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [confirmedText, setConfirmedText] = useState('');
   const [composition, setComposition] = useState('');
   const [interimStt, setInterimStt] = useState('');
+  const [cursorIndex, setCursorIndex] = useState(0);
   
   const [isRecording, setIsRecording] = useState(false);
   const [activeGesture, setActiveGesture] = useState<GestureType>(null);
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const defaultAffirmationIdx = useRef(0);
   const lastGestureTime = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const cursorIndexRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem('achievements', JSON.stringify(achievements));
@@ -48,7 +50,15 @@ const App: React.FC = () => {
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            setConfirmedText(prev => prev + event.results[i][0].transcript);
+            const transcript = event.results[i][0].transcript;
+            setConfirmedText(prev => {
+              const safeIndex = Math.min(cursorIndexRef.current, prev.length);
+              const nextText = `${prev.slice(0, safeIndex)}${transcript}${prev.slice(safeIndex)}`;
+              const nextCursorIndex = safeIndex + transcript.length;
+              cursorIndexRef.current = nextCursorIndex;
+              setCursorIndex(nextCursorIndex);
+              return nextText;
+            });
           } else {
             interim += event.results[i][0].transcript;
           }
@@ -66,7 +76,14 @@ const App: React.FC = () => {
   }, [isRecording]);
 
   const handleInsertChar = (char: string) => {
-    setConfirmedText(prev => prev + char);
+    setConfirmedText(prev => {
+      const safeIndex = Math.min(cursorIndexRef.current, prev.length);
+      const nextText = `${prev.slice(0, safeIndex)}${char}${prev.slice(safeIndex)}`;
+      const nextCursorIndex = safeIndex + char.length;
+      cursorIndexRef.current = nextCursorIndex;
+      setCursorIndex(nextCursorIndex);
+      return nextText;
+    });
     setComposition('');
   };
 
@@ -74,8 +91,28 @@ const App: React.FC = () => {
     if (composition.length > 0) {
       setComposition(prev => prev.slice(0, -1));
     } else {
-      setConfirmedText(prev => prev.slice(0, -1));
+      setConfirmedText(prev => {
+        if (cursorIndexRef.current <= 0) return prev;
+        const safeIndex = Math.min(cursorIndexRef.current, prev.length);
+        const nextText = `${prev.slice(0, safeIndex - 1)}${prev.slice(safeIndex)}`;
+        const nextCursorIndex = safeIndex - 1;
+        cursorIndexRef.current = nextCursorIndex;
+        setCursorIndex(nextCursorIndex);
+        return nextText;
+      });
     }
+  };
+
+  const handleTextClick = () => {
+    const nextCursorIndex = confirmedText.length;
+    cursorIndexRef.current = nextCursorIndex;
+    setCursorIndex(nextCursorIndex);
+  };
+
+  const handleCharacterClick = (index: number) => {
+    const nextCursorIndex = Math.min(index, confirmedText.length);
+    cursorIndexRef.current = nextCursorIndex;
+    setCursorIndex(nextCursorIndex);
   };
 
   const handleBatchSubmit = async () => {
@@ -102,6 +139,8 @@ const App: React.FC = () => {
     setConfirmedText('');
     setComposition('');
     setInterimStt('');
+    cursorIndexRef.current = 0;
+    setCursorIndex(0);
     if (isRecording) {
       setIsRecording(false);
       recognitionRef.current?.stop();
@@ -265,15 +304,40 @@ const App: React.FC = () => {
                     </div>
                     
                     <div className="relative mb-3">
-                      <div className="braun-input w-full bg-white text-gray-900 overflow-y-auto text-base min-h-[80px] sm:min-h-[100px] p-4 relative whitespace-pre-wrap break-all shadow-sm rounded-2xl border border-gray-100">
-                        {confirmedText}
+                      <div
+                        className="braun-input w-full bg-white text-gray-900 overflow-y-auto text-base min-h-[80px] sm:min-h-[100px] p-4 relative whitespace-pre-wrap break-all shadow-sm rounded-2xl border border-gray-100"
+                        onClick={handleTextClick}
+                      >
+                        {confirmedText.split('').map((char, index) => (
+                          <span
+                            key={`${char}-${index}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleCharacterClick(index + 1);
+                            }}
+                          >
+                            {char}
+                          </span>
+                        ))}
                         {composition && (
-                          <span className="underline decoration-braun-accent decoration-2 underline-offset-4 font-medium animate-pulse">
+                          <span
+                            className="underline decoration-braun-accent decoration-2 underline-offset-4 font-medium animate-pulse"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleTextClick();
+                            }}
+                          >
                             {composition}
                           </span>
                         )}
                         {interimStt && (
-                          <span className="text-gray-400 italic">
+                          <span
+                            className="text-gray-400 italic"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleTextClick();
+                            }}
+                          >
                             {interimStt}
                           </span>
                         )}
