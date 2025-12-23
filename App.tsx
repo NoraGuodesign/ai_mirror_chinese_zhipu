@@ -309,16 +309,19 @@ const App: React.FC = () => {
                         onClick={handleTextClick}
                       >
                         {confirmedText.split('').map((char, index) => (
-                          <span
-                            key={`${char}-${index}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCharacterClick(index + 1);
-                            }}
-                          >
-                            {char}
-                          </span>
+                          <React.Fragment key={`${char}-${index}`}>
+                            {cursorIndex === index && <span className="input-caret" aria-hidden="true" />}
+                            <span
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleCharacterClick(index + 1);
+                              }}
+                            >
+                              {char}
+                            </span>
+                          </React.Fragment>
                         ))}
+                        {cursorIndex === confirmedText.length && <span className="input-caret" aria-hidden="true" />}
                         {composition && (
                           <span
                             className="underline decoration-braun-accent decoration-2 underline-offset-4 font-medium animate-pulse"
