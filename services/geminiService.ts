@@ -128,12 +128,30 @@ export class GeminiService {
    * 生成即时定制赞美
    */
   async generatePraise(achievements: Achievement[], lastInput?: string): Promise<string> {
-    const fallback = () => {
-      if (lastInput) {
-        return `你把${lastInput.slice(0, 12)}做得很棒`;
+    const pickHighlight = (input?: string) => {
+      if (!input) return '';
+      const cleaned = input.replace(/[“”、"'`]/g, '').replace(/\s+/g, '').trim();
+      if (!cleaned) return '';
+      const fragment = cleaned.split(/[，。,；;！？!?]/).filter(Boolean)[0] || cleaned;
+      return fragment.length > 12 ? fragment.slice(0, 12) : fragment;
+    };
+
+    const buildLocalPraise = () => {
+      const highlight = pickHighlight(lastInput);
+      if (highlight) {
+        const templates = [
+          `你发现${highlight}，真会享受生活`,
+          `你注意到${highlight}，心思很细腻`,
+          `你记录了${highlight}，生活感满满`,
+          `你感受到${highlight}，真懂得照顾自己`,
+          `你留意到${highlight}，这份温柔很珍贵`,
+        ];
+        return templates[Math.floor(Math.random() * templates.length)];
       }
       return DEFAULT_AFFIRMATIONS[Math.floor(Math.random() * DEFAULT_AFFIRMATIONS.length)];
     };
+
+    const fallback = buildLocalPraise;
     const context = lastInput || achievements.slice(-2).map(a => a.text).join("，");
     
     try {
@@ -145,7 +163,7 @@ export class GeminiService {
           {
             role: "system",
             content:
-              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
+              "你是一个贴心的朋友。根据用户输入生成一句新的赞美，语气自然真诚、有针对性。避免机械套句或复述原话，禁止使用“你把xxx做得很棒”结构。必须以“你”开头，15-20字以内。直接输出文字，不要引号。",
           },
           { role: "user", content: `根据输入给出夸奖：${context}` },
         ],
@@ -154,6 +172,9 @@ export class GeminiService {
 
       let praiseText = content.trim().replace(/[“”、"']/g, "");
       if (!praiseText.startsWith('你')) praiseText = '你' + praiseText;
+      if (/你把.+做[得的]很棒/.test(praiseText)) {
+        return fallback();
+      }
       return praiseText.length > 25 ? praiseText.slice(0, 25) : praiseText;
     } catch (error) {
       console.error("Zhipu praise generation error:", error);

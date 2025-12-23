@@ -61,7 +61,10 @@ const AchievementBarrage: React.FC<Props> = ({ achievements, isActive }) => {
         }
 
         return (
-          <div key={laneIdx} className={`relative w-full overflow-hidden h-16 ${laneIdx === 1 ? 'mt-2' : ''}`}>
+          <div
+            key={laneIdx}
+            className={`relative w-full overflow-hidden min-h-[4.5rem] py-1 ${laneIdx === 1 ? 'mt-2' : ''}`}
+          >
             <div 
               className="flex absolute whitespace-nowrap will-change-transform animate-ticker"
               style={{ 
@@ -78,12 +81,12 @@ const AchievementBarrage: React.FC<Props> = ({ achievements, isActive }) => {
                   {repeatedItems.map((item, itemIdx) => (
                     <div 
                       key={`${item.id}-${setIdx}-${itemIdx}`} 
-                      className="flex flex-col items-start px-[150px] opacity-25"
+                      className="flex flex-col items-start px-[150px] opacity-25 flex-shrink-0"
                     >
                       <span className="text-[8px] text-white/40 tracking-[0.4em] font-bold uppercase mb-1">
                         {item.date.split(' ')[0]}
                       </span>
-                      <span className="font-light text-xl text-white uppercase tracking-[0.25em] drop-shadow-md">
+                      <span className="font-light text-xl text-white uppercase tracking-[0.25em] drop-shadow-md whitespace-nowrap">
                         {item.text}
                       </span>
                     </div>
@@ -104,6 +107,8 @@ const AchievementBarrage: React.FC<Props> = ({ achievements, isActive }) => {
           animation-name: ticker;
           animation-timing-function: linear;
           animation-iteration-count: infinite;
+          backface-visibility: hidden;
+          transform: translate3d(0, 0, 0);
         }
       `}</style>
     </div>
