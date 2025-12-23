@@ -1,0 +1,8 @@
+{
+  "name": "AetherMirror AI",
+  "description": "A futuristic AI-powered mirror that tracks your presence, provides personalized praises based on your achievements, and features gesture and voice interaction.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
