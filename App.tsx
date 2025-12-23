@@ -291,6 +291,9 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [status, praise, displayedPraise]);
 
+  const beforeText = confirmedText.slice(0, cursorIndex);
+  const afterText = confirmedText.slice(cursorIndex);
+
   return (
     <div className="braun-frame">
       <div className={`camera-indicator ${status === MirrorStatus.ACTIVE ? 'on' : 'off'}`} />
@@ -332,26 +335,24 @@ const App: React.FC = () => {
                         className="braun-input w-full bg-white text-gray-900 overflow-y-auto text-base min-h-[80px] sm:min-h-[100px] p-4 relative whitespace-pre-wrap break-all shadow-sm rounded-2xl border border-gray-100"
                         onClick={handleTextClick}
                       >
-                        {confirmedText.split('').map((char, index) => (
-                          <React.Fragment key={`${char}-${index}`}>
-                            {cursorIndex === index && <span className="input-caret" aria-hidden="true" />}
-                            <span
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleCharacterClick(index + 1);
-                              }}
-                            >
-                              {char}
-                            </span>
-                          </React.Fragment>
+                        {beforeText.split('').map((char, index) => (
+                          <span
+                            key={`before-${char}-${index}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleCharacterClick(index + 1);
+                            }}
+                          >
+                            {char}
+                          </span>
                         ))}
-                        {cursorIndex === confirmedText.length && <span className="input-caret" aria-hidden="true" />}
+                        <span className="input-caret" aria-hidden="true" />
                         {composition && (
                           <span
                             className="underline decoration-braun-accent decoration-2 underline-offset-4 font-medium animate-pulse"
                             onClick={(event) => {
                               event.stopPropagation();
-                              handleTextClick();
+                              handleCharacterClick(cursorIndex);
                             }}
                           >
                             {composition}
@@ -362,12 +363,23 @@ const App: React.FC = () => {
                             className="text-gray-400 italic"
                             onClick={(event) => {
                               event.stopPropagation();
-                              handleTextClick();
+                              handleCharacterClick(cursorIndex);
                             }}
                           >
                             {interimStt}
                           </span>
                         )}
+                        {afterText.split('').map((char, index) => (
+                          <span
+                            key={`after-${char}-${index}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleCharacterClick(cursorIndex + index + 1);
+                            }}
+                          >
+                            {char}
+                          </span>
+                        ))}
                         {confirmedText === '' && !composition && !interimStt && (
                           <span className="text-gray-300 absolute left-4 top-4 italic font-light">捕捉你的高光时刻...</span>
                         )}
